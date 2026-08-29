@@ -24,6 +24,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import vgeom
 FFMPEG = ff_path.FFMPEG
 FFPROBE = ff_path.FFPROBE
 NUM, DEN = 30000, 1001                      # 29.97fps — 기준 카메라(--camA)에 맞춘다
@@ -48,15 +49,9 @@ def venc(bitrate):
             '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-an']
 
 
-def zoom_vf(zoom, anchor, anchors):
-    if zoom <= 100:
-        return None
-    cw = int(1920 / (zoom / 100)) // 2 * 2
-    ch = int(1080 / (zoom / 100)) // 2 * 2
-    cx, cy = anchors[anchor]
-    x = int(min(max(cx - cw / 2, 0), 1920 - cw))
-    y = int(min(max(cy - ch / 2, 0), 1080 - ch))
-    return 'crop=%d:%d:%d:%d,scale=1920:1080:flags=lanczos' % (cw, ch, x, y)
+def zoom_vf(zoom, anchor, anchors, W, H):
+    # ⛔ 해상도를 박아 두면 1080p 아닌 원본에서 크롭이 화면 밖으로 나간다 → 영상에서 읽은 W·H 를 쓴다
+    return vgeom.crop_vf(zoom, anchors[anchor], W, H, flags='lanczos')
 
 
 def build_timeline(cands, decisions, dur_s, main=1):
@@ -130,6 +125,8 @@ def main():
     a = ap.parse_args()
 
     C = json.load(open(a.cands)); anchors = C['anchors']; total = C['dur']
+    VW, VH = vgeom.video_size(a.camA)
+    print('영상 %dx%d' % (VW, VH))
 
     # ★ 두 카메라가 «둘 다 존재하는» 구간까지만 만든다.
     #   먼저 시작한 카메라는 그만큼 먼저 끝난다 — 그 뒤를 요구하면 마지막 조각이 몇 프레임 모자란다.
@@ -165,7 +162,7 @@ def main():
             errs.append('#%d 구간이 1초 미만 (%.2f초)' % (i, s['end'] - s['start']))
         if i and abs(s['start'] - tl[i - 1]['end']) > 0.001:
             errs.append('#%d 앞 구간과 이가 안 맞음' % i)
-        if s['zoom'] > 100 and not zoom_vf(s['zoom'], s['anchor'], anchors):
+        if s['zoom'] > 100 and not zoom_vf(s['zoom'], s['anchor'], anchors, VW, VH):
             errs.append('#%d 확대 틀 계산 실패' % i)
     if abs(tl[-1]['end'] - total) > 0.05:
         errs.append('전체 길이 불일치 %.3f vs %.3f' % (tl[-1]['end'], total))
@@ -212,7 +209,7 @@ def main():
             vf.append('hflip')
         if s['cam'] == 2:
             vf.append('fps=%d/%d' % (NUM, DEN))          # 30.00 → 29.97 로 맞춘다
-        z = zoom_vf(s['zoom'], s['anchor'], anchors)
+        z = zoom_vf(s['zoom'], s['anchor'], anchors, VW, VH)
         if z:
             vf.append(z)
         p = os.path.join(seg, 's%03d.mp4' % i)

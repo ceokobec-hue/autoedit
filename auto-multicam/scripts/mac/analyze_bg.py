@@ -46,7 +46,12 @@ def main():
     ap.add_argument('--dur', type=float, required=True, help='영상 길이(초)')
     a = ap.parse_args()
 
-    d = json.load(open(os.path.join(a.dir, 'board_bg.json')))
+    meta = os.path.join(a.dir, 'board_bg.json')
+    if not os.path.exists(meta):
+        raise SystemExit('⛔ %s 이(가) 없습니다.\n'
+                         '   → python3 board_bg.py <칠판이 나오는 영상.mp4> '
+                         '--crop <w:h:x:y> --outdir %s  를 먼저 돌리세요.' % (meta, a.dir))
+    d = json.load(open(meta))
     bgs = np.load(os.path.join(a.dir, 'bgs.npy'))
     t = np.array(d['t']); step = d['step']
     n = len(bgs)
@@ -56,7 +61,16 @@ def main():
     ink = maps.reshape(n, -1).mean(axis=1)
 
     # 판서 속도 = 앞뒤 24초 기울기
+    # ⛔ 짧은 영상에서는 «앞뒤 24초»가 표본보다 길어 배열이 어긋난다(ValueError).
+    #    창을 표본 수에 맞춰 줄이고, 그래도 모자라면 사람이 알아들을 말로 세운다.
     L = max(1, int(24 / step / 2))
+    if n < 2 * L + 3:
+        L = max(1, (n - 3) // 2)
+    if n < 5:
+        raise SystemExit(
+            '⛔ 프레임이 %d장뿐이라 «판서 중인지»를 판정할 수 없습니다.\n'
+            '   판서 감지는 몇 분 이상 되는 영상용입니다.\n'
+            '   board_bg.py 의 표본 간격(step=%.1f초)을 줄이거나, 더 긴 영상을 쓰세요.' % (n, step))
     rate = np.zeros(n)
     rate[L:n - L] = ink[2 * L:] - ink[:n - 2 * L]
 

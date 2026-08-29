@@ -10,7 +10,7 @@ make_plan.py — 판서 구간 + 대본으로 «전환·확대 후보»를 만�
 
 시작·끝은 «문장 경계»(SRT 큐)로 옮긴다. 문장 한가운데서 카메라가 바뀌면 어색하다.
 """
-import argparse, json, re
+import argparse, json, os, re
 # ⛔ 부품이 «작은 방»(~/.autoedit/venv) 안에 있어 그냥 python3 로는 안 보인다 →
 #    스택트레이스 대신 «어떻게 하면 되는지»를 한국어로 알려 준다.
 try:
@@ -27,11 +27,13 @@ except ModuleNotFoundError:
 
 EMPH = ['핵심', '중요', '반드시', '포인트', '정리하', '기억', '결론', '명심', '절대']
 
-# 확대 기본 틀 — 화면에서 어디를 남길지 (원본 1920x1080 기준 중심점)
+# 확대 기본 틀 — 화면에서 어디를 남길지.
+# ⛔ 절대좌표(픽셀)로 적으면 1080p 아닌 영상에서 엉뚱한 자리를 가리킨다 → «비율(0~1)»로 적는다.
+#    (옛 계획 파일의 절대좌표도 vgeom.as_ratio 가 알아서 받아 준다)
 ANCHOR = {
-    'board':  (740, 390),    # CAM2 · 판서 + 강사 얼굴이 같이 들어오는 자리
-    'center': (960, 540),
-    'face':   (960, 520),    # CAM1 · 천장을 덜어내고 얼굴을 키운다
+    'board':  (0.385, 0.361),   # CAM2 · 판서 + 강사 얼굴이 같이 들어오는 자리
+    'center': (0.500, 0.500),
+    'face':   (0.500, 0.481),   # CAM1 · 천장을 덜어내고 얼굴을 키운다
 }
 
 
@@ -69,6 +71,10 @@ def main():
                     help='빈 구간을 채울 «메인 카메라». 나머지 한 대가 컷인용이 된다')
     a = ap.parse_args()
 
+    for _p, _who in ((a.segs, 'python3 analyze_bg.py --dir <프레임폴더> --dur <초> 를 먼저 돌리세요'),
+                     (a.srt,  '자막 SRT 를 --srt 로 주세요')):
+        if not os.path.exists(_p):
+            raise SystemExit('⛔ %s 이(가) 없습니다.\n   → %s' % (_p, _who))
     S = json.load(open(a.segs)); cues = read_srt(a.srt)
     items = []
     BOARD_CAM = 2          # 판서가 보이는 카메라(고정 삼각대) — 실측으로 확인된 값

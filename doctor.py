@@ -147,7 +147,20 @@ def main():
         else:
             say(OK, '카드용 웹폰트 4/4 (woff2)')
 
-    # 8. swift — 인물 옆 자막(얼굴 인식)에만 필요
+    # 8. whisper-cli — 자막(SRT)·낱말 시각을 만드는 도구
+    # ⛔ ffmpeg-full 에 «딸려 오지 않는다». 따로 받아야 한다.
+    if shutil.which('whisper-cli'):
+        say(OK, 'whisper-cli — 자막 만들기 사용 가능')
+    else:
+        say(WARN, 'whisper-cli 가 없습니다 (선택)',
+            '자막(SRT)을 «자동으로 만드는» 단계와 오토멀티캠 문장 분해만 못 씁니다.\n'
+            '     이미 자막 파일이 있으면 필요 없습니다.\n'
+            '     → brew install whisper-cpp\n'
+            '     ⛔ 낱말 시각을 쓰려면 «-nfa» 를 꼭 붙이세요 — 없으면 시각이 전부 −1 로\n'
+            '        나오는데 에러는 안 납니다:\n'
+            '        whisper-cli -m ggml-small.bin -f A.wav -l ko -ojf -dtw small -nfa -of captions')
+
+    # 9. swift — 인물 옆 자막(얼굴 인식)에만 필요
     if shutil.which('swift'):
         say(OK, 'swift — 인물 옆 자막 사용 가능')
     else:
@@ -155,7 +168,7 @@ def main():
             '「인물 옆 자막」·OTS 자리 판정만 못 씁니다. Xcode Command Line Tools:\n'
             '     xcode-select --install')
 
-    # 9. hyperframes — 인서트 제작 단계에만 필요
+    # 10. hyperframes — 인서트 제작 단계에만 필요
     if shutil.which('hyperframes'):
         say(OK, 'hyperframes — 인서트 제작 사용 가능')
     else:

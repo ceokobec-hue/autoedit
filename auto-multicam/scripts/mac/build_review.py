@@ -32,6 +32,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import vgeom
 FF = ff_path.FFMPEG
 
 
@@ -72,14 +73,10 @@ def inkmap(b, r=25, thr=7.0):
     return np.clip(boxblur(b, r) - b.astype(np.float64) - thr, 0, None)
 
 
-def crop_for(zoom, anchor, anchors):
-    if zoom <= 100:
-        return 'null'
-    cw, ch = int(1920 / (zoom / 100)) // 2 * 2, int(1080 / (zoom / 100)) // 2 * 2
-    cx, cy = anchors[anchor]
-    x = int(np.clip(cx - cw / 2, 0, 1920 - cw))
-    y = int(np.clip(cy - ch / 2, 0, 1080 - ch))
-    return 'crop=%d:%d:%d:%d,scale=1920:1080' % (cw, ch, x, y)
+def crop_for(zoom, anchor, anchors, W, H):
+    # ⛔ 1920×1080 을 박아 두면 1280×720 원본에서 자르는 사각형이 화면 밖으로 나가
+    #    ffmpeg 이 «패킷이 하나도 안 왔다»며 빈 파일을 만든다 → 크기는 영상에서 읽는다.
+    return vgeom.crop_vf(zoom, anchors[anchor], W, H) or 'null'
 
 
 def mmss(v):
@@ -100,6 +97,8 @@ def main():
     a = ap.parse_args()
 
     C = json.load(open(a.cands)); anchors = C['anchors']; dur = C['dur']
+    VW, VH = vgeom.video_size(a.camA)          # ⛔해상도를 코드에 박지 않는다
+    print('영상 %dx%d' % (VW, VH))
     NAME = {1: a.names.split(',')[0], 2: a.names.split(',')[1]}
     SRC = {1: a.camA, 2: a.camB}
     MAIN = a.main
@@ -113,10 +112,11 @@ def main():
         tm = t + (a.offset if MAIN == 2 else 0.0)
         now = b64(frame_jpg(SRC[MAIN], tm, 'null'))
         tc = t + (a.offset if c['cam'] == 2 else 0.0)
-        after = b64(frame_jpg(SRC[c['cam']], tc, crop_for(c['zoom'], c['anchor'], anchors)))
+        after = b64(frame_jpg(SRC[c['cam']], tc, crop_for(c['zoom'], c['anchor'], anchors, VW, VH)))
 
         diff = None
-        if 'i0' in c:
+        # ⛔ 'i0' in c 는 «값이 null» 이어도 참이다 → bgs[None] 이 되어 낯선 에러가 난다
+        if c.get('i0') is not None and c.get('i1') is not None:
             m0, m1 = inkmap(bgs[c['i0']]), inkmap(bgs[c['i1']])
             base = bgs[c['i1']].astype(np.float32)
             img = np.stack([base * 0.35 + 165] * 3, axis=-1)

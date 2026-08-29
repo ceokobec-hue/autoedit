@@ -9,8 +9,19 @@ sentences.py — whisper JSON(토큰 시각)에서 «문장» 단위 목록을 �
   그래서 토큰 시각을 이어붙여 «마침표·물음표»와 «숨 쉬는 쉼»으로 다시 자른다.
 
 산출: [{i, s, e, text, gap_before, emph, question, exclam, nwords}]
+
+⛔ 낱말 시각(t_dtw)은 «-nfa» 없이는 전부 −1 로 나온다. 에러는 안 난다.
+   자막을 이렇게 만들어야 한다:
+     whisper-cli -m ggml-small.bin -f A.wav -l ko -ojf -dtw small -nfa -of captions
+   (-ojf = 낱말 단위 JSON · -dtw small = 낱말 시각 계산 · -nfa = flash attention 끄기)
 """
-import argparse, json, re
+import argparse, json, os, re, sys
+
+WHISPER_HOWTO = (
+    '   자막을 이렇게 다시 만들어 주세요:\n'
+    '     whisper-cli -m ggml-small.bin -f <소리.wav> -l ko -ojf -dtw small -nfa -of captions\n'
+    '     ⛔ «-nfa» 가 핵심입니다. 이게 없으면 whisper 가 낱말 시각을 전부 −1 로 내보내면서\n'
+    '        에러는 내지 않습니다. 그러면 문장이 «시간 덩어리»로 잘려 컷이 말 한가운데서 끊깁니다.')
 
 END = '.?!'
 EMPH = ['핵심', '중요', '반드시', '포인트', '기억하', '결론', '명심', '절대', '꼭 ', '정말',
@@ -18,8 +29,14 @@ EMPH = ['핵심', '중요', '반드시', '포인트', '기억하', '결론', '�
 
 
 def load(path):
+    if not os.path.exists(path):
+        raise SystemExit('⛔ %s 이(가) 없습니다.\n%s' % (path, WHISPER_HOWTO))
     d = json.load(open(path, encoding='utf-8'))
+    if 'transcription' not in d:
+        raise SystemExit('⛔ %s 은(는) whisper.cpp 의 «낱말 단위» JSON 이 아닙니다.\n%s'
+                         % (path, WHISPER_HOWTO))
     toks = []
+    n_dtw = 0                     # 낱말 시각이 «실제로» 들어 있는 토큰 수
     for seg in d['transcription']:
         for t in seg.get('tokens', []):
             tx = t.get('text', '')
@@ -31,7 +48,21 @@ def load(path):
             b = off['to'] / 1000.0
             if isinstance(o, (int, float)) and o >= 0:
                 a = o / 100.0                      # t_dtw 는 1/100초 단위
+                n_dtw += 1
             toks.append({'x': tx, 's': a, 'e': max(b, a)})
+    if not toks:
+        raise SystemExit('⛔ %s 에서 낱말을 하나도 못 읽었습니다.\n%s' % (path, WHISPER_HOWTO))
+    # ⛔⛔ 여기가 «조용한 실패»의 자리다. t_dtw 가 전부 −1 이어도 코드는 그냥 돌아가고
+    #     자막 큐 시각(offsets)으로 문장을 자른다 — 결과는 «말 한가운데서 끊기는 컷»이다.
+    #     에러도 경고도 없이 품질만 나빠지므로, 여기서 «명시적으로» 세우고 알린다.
+    if n_dtw == 0:
+        raise SystemExit(
+            '⛔ 낱말 시각(t_dtw)이 하나도 없습니다 — 낱말 %d개가 전부 −1 입니다.\n'
+            '   «-nfa» 를 빼먹으셨을 가능성이 큽니다.\n%s' % (len(toks), WHISPER_HOWTO))
+    if n_dtw < len(toks) * 0.5:
+        print('⚠️ 낱말 시각이 %d/%d (%.0f%%) 뿐입니다 — 문장 경계가 거칠어집니다.'
+              % (n_dtw, len(toks), n_dtw * 100.0 / len(toks)))
+        print(WHISPER_HOWTO)
     toks.sort(key=lambda t: t['s'])
     return toks
 
@@ -89,8 +120,12 @@ def main():
           % (len(S), sum(L) / len(L), st.median(L), min(L), max(L)))
     print('  1분당 %.1f문장 · 강조어 포함 %d개 · 물음표 %d개'
           % (len(S) / (a.dur / 60), sum(x['emph'] for x in S), sum(x['question'] for x in S)))
-    print('  문장 사이 쉼: 중앙값 %.2f초 · 0.5초 이상 %d곳 · 1.0초 이상 %d곳'
-          % (st.median(G), sum(g >= 0.5 for g in G), sum(g >= 1.0 for g in G)))
+    # ⛔ 문장이 1개면 «사이»가 없어 G 가 빈 리스트다 → st.median 이 죽는다
+    if G:
+        print('  문장 사이 쉼: 중앙값 %.2f초 · 0.5초 이상 %d곳 · 1.0초 이상 %d곳'
+              % (st.median(G), sum(g >= 0.5 for g in G), sum(g >= 1.0 for g in G)))
+    else:
+        print('  문장이 1개뿐이라 «문장 사이 쉼»은 잴 것이 없습니다.')
     print('\n앞 12문장')
     for x in S[:12]:
         print('  %6.1f~%6.1f (%4.1f초, 쉼%.2f) %s%s %s'

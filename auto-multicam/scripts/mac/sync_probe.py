@@ -103,8 +103,10 @@ def parabolic(y, k):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('a'); ap.add_argument('b')
-    ap.add_argument('--probes', default='')
-    ap.add_argument('--win', type=float, default=20.0)
+    ap.add_argument('--probes', default='',
+                    help='측정할 시각을 쉼표로 직접 지정. 예: --probes 120,780,1440')
+    ap.add_argument('--win', type=float, default=20.0,
+                    help='한 지점당 비교할 길이(초). ⛔영상이 짧으면 이걸 줄여야 한다 (기본 20)')
     ap.add_argument('--out', default='')
     args = ap.parse_args()
 
@@ -164,7 +166,18 @@ def main():
         rows.append({'t': t, 'offset': off, 'score': score, 'margin': margin})
 
     if len(rows) < 2:
-        raise SystemExit('⛔ 측정 지점이 부족하다')
+        # ⛔ 「측정 지점이 부족하다」 한 줄만 던지면 «그래서 어쩌라는》 건지 알 수 없다.
+        #    기본 창(20초)이 영상보다 길면 지점이 하나도 안 잡힌다 → 얼마로 줄이면 되는지 계산해 준다.
+        dur = min(len(A), len(B)) / float(sr)
+        suggest = max(2.0, round(dur / 5.0))
+        raise SystemExit(
+            '⛔ 측정 지점이 %d곳뿐이라 드리프트(시계 차이)를 계산할 수 없습니다. 최소 2곳이 필요합니다.\n'
+            '   지금 영상이 %.0f초인데 «한 지점당 창»이 %.0f초라 지점이 안 잡힙니다.\n'
+            '   → 창을 줄여 다시 돌리세요:   --win %g\n'
+            '   → 지점을 직접 찍어 줄 수도 있습니다:  --probes %s\n'
+            '   (짧은 클립으로 시험만 하는 거라면 이대로도 «시작 밀림»은 위 0단계 값이 답입니다.)'
+            % (len(rows), dur, args.win, suggest,
+               ','.join('%g' % (dur * k / 4.0) for k in (1, 2, 3))))
 
     print('\n[1단계 정밀측정]')
     print('| 지점 | 밀림 | 일치도 | 2등격차 |')

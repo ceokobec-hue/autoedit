@@ -14,6 +14,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+from platform_tools import venc      # 인코더는 OS 마다 다르다 (맥·윈도우·리눅스)
 FF=ff_path.FFMPEG
 FP=ff_path.FFPROBE
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -71,10 +72,11 @@ for k,it in enumerate(items,1):
               %(cur,k,it['x'],it['y'],it['s']-off,it['e']-off,nxt))
     cur=nxt
 # ⛔ '0:a:0' 는 소리가 없는 영상에서 «옵션 값이 틀렸다»며 죽는다 → '?' = 없으면 그냥 건너뛴다
-cmd+=['-filter_complex',';'.join(fc),'-map','[%s]'%cur,'-map','0:a:0?',
-      '-c:v','h264_videotoolbox','-b:v',a.bitrate,'-pix_fmt','yuv420p',
+cmd+=(['-filter_complex',';'.join(fc),'-map','[%s]'%cur,'-map','0:a:0?']
+      + venc(a.bitrate) +                       # ← 이 컴퓨터에 맞는 인코더 (platform_tools.py)
+      ['-pix_fmt','yuv420p',
       '-g','60','-r','30','-video_track_timescale','30000',
-      '-c:a','aac','-b:a','192k','-movflags','+faststart',a.out]
+      '-c:a','aac','-b:a','192k','-movflags','+faststart',a.out])
 
 print('카드 %d장 · 비트레이트 %s'%(len(items),a.bitrate), flush=True)
 t0=time.time()

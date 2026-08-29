@@ -9,6 +9,8 @@ import os, json, subprocess, sys, time, argparse
 import sys, os as _os
 sys.path.insert(0,_os.path.dirname(_os.path.abspath(__file__)))
 import job
+# job.py 가 저장소 뿌리를 sys.path 에 넣어 준다 → 그 뒤라야 platform_tools 가 보인다
+from platform_tools import venc      # 인코더는 OS 마다 다르다 (맥·윈도우·리눅스)
 job.chdir()
 FF=job.FF
 V=job.VIDEO
@@ -83,9 +85,10 @@ out = '_test.mp4' if TEST else (_a.out or job.OUT)
 cmd=[FF,'-y']
 if TEST: cmd += ['-ss',str(SS),'-t',str(T)]
 # ⛔ '0:a' 는 소리가 없는 영상에서 죽는다 → '?' = 없으면 그냥 건너뛴다
-cmd += inputs + ['-filter_complex','\n'.join(fc),'-map','[out]','-map','0:a?',
-      '-c:v','h264_videotoolbox','-b:v','22M','-profile:v','high',
-      '-c:a','copy','-movflags','+faststart', out]
+cmd += (inputs + ['-filter_complex','\n'.join(fc),'-map','[out]','-map','0:a?']
+      + venc('22M') +                           # ← 이 컴퓨터에 맞는 인코더 (platform_tools.py)
+      ['-profile:v','high',
+      '-c:a','copy','-movflags','+faststart', out])
 # ⛔ 프리플라이트 — 입력 PNG 가 하나라도 없으면 여기서 멈춘다
 missing=[a for a in inputs if a.endswith('.png') and not os.path.exists(a)]
 if missing:

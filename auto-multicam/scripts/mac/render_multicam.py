@@ -24,6 +24,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import platform_tools               # 인코더는 OS 마다 다르다 (맥·윈도우·리눅스)
 import vgeom
 FFMPEG = ff_path.FFMPEG
 FFPROBE = ff_path.FFPROBE
@@ -43,8 +44,11 @@ def dur(p):
 
 
 def venc(bitrate):
-    """모든 조각이 이 설정으로 구워져야 concat -c copy 가 된다. 한 글자도 달라지면 안 된다."""
-    return ['-c:v', 'h264_videotoolbox', '-b:v', bitrate, '-pix_fmt', 'yuv420p',
+    """모든 조각이 이 설정으로 구워져야 concat -c copy 가 된다. 한 글자도 달라지면 안 된다.
+
+    ★ 인코더 이름은 OS 마다 다르므로 platform_tools 가 고른다 — 한 프로세스 안에서는
+      언제나 같은 답이 나오므로 「조각마다 설정이 다른」 사고는 나지 않는다."""
+    return platform_tools.venc(bitrate) + ['-pix_fmt', 'yuv420p',
             '-g', '60', '-r', '%d/%d' % (NUM, DEN), '-video_track_timescale', str(NUM),
             '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-an']
 

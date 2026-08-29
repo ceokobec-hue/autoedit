@@ -13,14 +13,44 @@
 
 모든 명령은 **저장소 폴더 안에서** 칩니다.
 
+**맥**
+
 ```bash
 cd ~/Downloads/autoedit          # ← clone 받은 곳으로
 PY=~/.autoedit/venv/bin/python   # ← 이 도구 전용 «작은 방»의 파이썬
 ```
 
+**윈도우** (명령 프롬프트) ⚠️아직 실기 확인을 못 했습니다
+
+```
+cd %USERPROFILE%\Downloads\autoedit
+set PY=%USERPROFILE%\.autoedit\venv\Scripts\python
+```
+
 > **왜 `python3` 가 아닌가요?** 부품(numpy·fontTools)을 `~/.autoedit/venv` 라는 작은 방 안에
 > 넣어 뒀습니다. 방 밖의 `python3` 로는 그 부품이 **안 보입니다**. 방의 파이썬을 불러야 합니다.
 > 설치가 아직이면 `설치.md` 를 먼저 보세요.
+>
+> ⛔ **윈도우 venv 는 `bin` 이 아니라 `Scripts` 입니다.** 여기서 틀리면 그 뒤가 전부 막힙니다.
+
+### 윈도우에서 바꿔 칠 것 — 이 표 하나면 이 문서 전체가 됩니다
+
+아래 1~4번은 **맥 기준 한 벌**로만 적었습니다. 윈도우에서는 이 일곱 가지만 바꿔 치세요.
+(단계마다 「내가 어느 쪽이지」를 다시 고르지 않아도 되게 한 번만 모아 뒀습니다.)
+
+| 이 문서에 이렇게 나오면 | 윈도우(명령 프롬프트)에선 |
+|---|---|
+| `python3 ...` | `python ...` (스토어가 열리면 `py ...`) |
+| `PY=...` · `S=...` | `set PY=...` · `set S=...` |
+| `$PY` · `$S` | `%PY%` · `%S%` |
+| `mkdir -p examples/out && cd examples/out` | `mkdir examples\out` 를 치고, 그다음 줄에 `cd examples\out` |
+| `cp A B` | `copy A B` |
+| `open 파일` | `start 파일` |
+| 줄 끝의 `\` (다음 줄로 이어진다는 뜻) | `\` 를 지우고 **한 줄로 이어서** 치기 |
+
+> PowerShell 을 쓰신다면 `set A=B` → `$env:A="B"`, `%PY%` → `& $env:PY` 입니다.
+> `&`(부르기 기호)를 빠뜨리면 **경로만 화면에 찍히고 아무 일도 안 일어납니다** — 헷갈리기 쉬워
+> 명령 프롬프트를 권합니다.
 
 ---
 
@@ -29,8 +59,11 @@ PY=~/.autoedit/venv/bin/python   # ← 이 도구 전용 «작은 방»의 파�
 카메라도, 찍어 둔 영상도 필요 없습니다. ffmpeg 이 만들어 줍니다.
 
 ```bash
-bash examples/make_sample.sh
+python3 examples/make_sample.py
 ```
+
+> 맥용 셸판 `bash examples/make_sample.sh` 도 그대로 있습니다 — 하는 일은 같습니다.
+> **윈도우엔 bash 가 없어서** 파이썬판(`.py`)을 쓰셔야 합니다: `python examples\make_sample.py`
 
 나오는 것:
 
@@ -73,8 +106,8 @@ cd ../..
 
 - **카드가 통째로 안 보임** → `shots/` 안에 PNG 가 생겼는지 보세요. 없으면 Chrome 문제입니다
   (`python3 doctor.py` 의 「크롬」 줄).
-- **글꼴이 이상함** → `bash auto-insert/scripts/mac/get_fonts.sh` 를 돌리세요.
-  카드는 **woff2 4종**이 있어야 제 글꼴로 나옵니다.
+- **글꼴이 이상함** → 폰트를 받으세요. 카드는 **woff2 4종**이 있어야 제 글꼴로 나옵니다.
+  맥 `bash auto-insert/scripts/mac/get_fonts.sh` · 윈도우 `python auto-insert\scripts\mac\get_fonts.py`
 - **왼쪽 위 글자만 안 나옴** → 기본 ffmpeg 을 보고 있는 겁니다. `python3 doctor.py` 로 확인하세요.
 </details>
 
@@ -115,21 +148,24 @@ cd examples/ots && $PY ../../auto-insert/scripts/mac/ots_v2/render_ots_v2.py \
 ## 4. 카메라 두 대 — 소리로 싱크 맞추기 (1분)
 
 ```bash
-mkdir -p examples/mc && cd examples/mc
-FF=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg     # 인텔 맥이면 /usr/local/opt/...
+# 소리만 뽑는다 — sync_probe 는 «영상»이 아니라 «16kHz 모노 wav» 를 먹습니다
+python3 examples/make_wav.py examples/sample.mp4  examples/mc/A.wav
+python3 examples/make_wav.py examples/sample2.mp4 examples/mc/B.wav
 
-# 소리만 뽑는다 — sync_probe 는 «영상»이 아니라 «16bit 모노 wav» 를 먹습니다
-$FF -v error -i ../sample.mp4  -vn -ac 1 -ar 16000 -c:a pcm_s16le -y A.wav
-$FF -v error -i ../sample2.mp4 -vn -ac 1 -ar 16000 -c:a pcm_s16le -y B.wav
-
+cd examples/mc
 $PY ../../auto-multicam/scripts/mac/sync_probe.py A.wav B.wav --probes 5,10,15 --win 4 --out sync.json
 cd ../..
 ```
 
+> **왜 `make_wav.py` 인가요?** 전에는 여기에 `/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg` 처럼
+> **ffmpeg 경로를 통째로 적어** 뒀습니다. 그 경로는 인텔 맥·윈도우·다른 곳에 받은 분께
+> **전부 틀립니다.** 이제 `ff_path.py` 가 알아서 찾으므로 어느 컴퓨터에서든 이 한 줄로 끝납니다.
+> 아무 영상에나 쓸 수 있습니다 — whisper 로 받아쓰기 할 때 쓰는 wav 도 같은 모양입니다.
+
 `밀림 0.000초` 가 나오면 정상입니다 — 두 샘플은 **같은 소리**를 넣어 만들었기 때문입니다.
 실제 촬영본이라면 여기 나온 `intercept` 값을 `render_multicam.py --offset` 에 넣습니다.
 
-전체 흐름은 `auto-multicam/사용법.md` 를 보세요.
+전체 흐름은 [`auto-multicam/SKILL.md`](../auto-multicam/SKILL.md) 를 보세요.
 
 ---
 
@@ -137,7 +173,9 @@ cd ../..
 
 | 파일 | 무엇 | 커밋되나 |
 |---|---|---|
-| `make_sample.sh` | 시험용 영상·자막을 만드는 스크립트 | ✅ |
+| `make_sample.py` | 시험용 영상·자막을 만듭니다 (맥·윈도우 공통) | ✅ |
+| `make_sample.sh` | 위와 같은 일을 하는 **맥 전용 셸판** | ✅ |
+| `make_wav.py` | 영상에서 16kHz 모노 wav 뽑기 (싱크 재기·받아쓰기용) | ✅ |
 | `cards.json` | 인서트컷 원고 2장 (코너 1 + 풀프레임 1) | ✅ |
 | `place.json` | 그 카드를 «어디에·언제» 놓을지 | ✅ |
 | `chapters.json` | 단원 2개 (0초·10초) | ✅ |
@@ -145,6 +183,10 @@ cd ../..
 | `job.example.json` | `pipeline_v2` 용 설정 예시 | ✅ |
 | `sample.mp4` · `sample2.mp4` · `sample.srt` | 1번이 만들어 냅니다 | ⛔ (`.gitignore`) |
 | `out/` · `ots/` · `mc/` | 2~4번의 산출물 | ⛔ |
+
+> ⚠️ 이 문서의 명령은 **맥에서 전부 직접 돌려 확인**했습니다.
+> 윈도우 쪽(위 치환표)은 **아직 실기에서 확인하지 못했습니다** — 막히시면
+> [Issues](https://github.com/ceokobec-hue/autoedit/issues) 에 `python doctor.py` 결과와 함께 알려 주세요.
 
 칸 하나하나의 뜻은 [`파일형식.md`](../파일형식.md) 에 표로 있습니다.
 

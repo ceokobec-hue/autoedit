@@ -20,6 +20,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import platform_tools
 FF    = ff_path.FFMPEG
 FONTS = os.environ.get('AUTOEDIT_FONTS', os.path.expanduser('~/.autoedit/fonts'))
 F     = os.path.join(FONTS, 'Pretendard-Bold.otf')
@@ -30,7 +31,7 @@ _FONT_CACHE=[None]
 def _font():
     if _FONT_CACHE[0] is None:
         if not os.path.exists(F):
-            sys.exit(f"\u26d4 폰트가 없습니다: {F}\n   → bash get_fonts.sh  로 먼저 받아 주세요.")
+            sys.exit(f"\u26d4 폰트가 없습니다: {F}\n   → {platform_tools.fonts_cmd()}  로 먼저 받아 주세요.")
         _FONT_CACHE[0]=CaptionFont(F)
     return _FONT_CACHE[0]
 def chap(t):

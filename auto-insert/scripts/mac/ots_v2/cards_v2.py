@@ -5,8 +5,15 @@
    card dict + tone → HTML → 투명 PNG.  ⛔외부 파이썬 패키지 없음."""
 import os, sys, subprocess, tempfile, shutil, time, html as _h
 
-# ⛔ 크롬 위치를 코드에 박지 않는다 — 다른 데 깔았거나 안 깔았을 수 있다
-CHROME = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+# ── 저장소 뿌리의 도우미(ff_path·platform_tools)를 쓰려고 뿌리를 찾아 올라간다 ──
+_R = os.path.dirname(os.path.abspath(__file__))
+while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path.py')):
+    _R = os.path.dirname(_R)
+sys.path.insert(0, _R)
+import platform_tools
+
+# ⛔ 크롬 위치를 코드에 박지 않는다 — 다른 데 깔았거나 안 깔았을 수 있고, OS 마다 자리도 다르다
+CHROME = platform_tools.find_chrome()
 
 # 폰트 창고는 한 곳뿐이다: $AUTOEDIT_FONTS (기본 ~/.autoedit/fonts) — get_fonts.sh 가 채운다.
 #   OTS_ASSETS 를 주면 «그 폴더 밑의 fonts/» 를 본다(옛 방식 호환).
@@ -25,16 +32,12 @@ def check_fonts():
     if missing:
         sys.exit('⛔ 카드 폰트(woff2)가 없습니다 — 이대로 구우면 «에러 없이 다른 글꼴»로 나갑니다.\n'
                  '   찾은 곳: %s\n   없는 파일:\n     %s\n'
-                 '   → bash auto-insert/scripts/mac/get_fonts.sh\n'
-                 '     (다른 곳에 두셨다면  export AUTOEDIT_FONTS=<그 폴더>)'
-                 % (FONTDIR, '\n     '.join(missing)))
+                 '   → %s\n'
+                 '     (다른 곳에 두셨다면  AUTOEDIT_FONTS 환경변수로 알려 주세요)'
+                 % (FONTDIR, '\n     '.join(missing), platform_tools.fonts_cmd()))
 
 def check_chrome():
-    if not os.path.exists(CHROME):
-        sys.exit('⛔ 크롬을 못 찾았습니다: %s\n'
-                 '   카드·인서트 PNG 는 크롬이 굽습니다(무료).\n'
-                 '   → brew install --cask google-chrome\n'
-                 '     다른 곳에 있으면  export CHROME=<크롬 실행파일 경로>' % CHROME)
+    platform_tools.require_chrome()
 
 SIZE = {                       # 종류별 본체 크기 · 여백(그림자·돌출·스크림용)
     'sticker' : (780,  590, 130),

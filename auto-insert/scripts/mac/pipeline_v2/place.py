@@ -54,15 +54,17 @@ def is_screen(g):
     return g[30:130,250:900].mean()>145
 
 def faces(paths):
-    """★ 얼굴 검출은 «기존 정본» speaker_box.swift 를 쓴다 (같은 폴더).
-       그쪽이 얼굴·사람에 더해 «화면 글자(OCR)» 까지 잡아 준다 — 새로 만들지 말 것.
-       출력: [{image,width,height,faces:[{x,y,w,h,conf}],persons:[...],texts:[...]}]"""
-    SW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'speaker_box.swift')
-    r = subprocess.run(['swift', os.path.normpath(SW), '--no-text'] + paths,
-                       capture_output=True, text=True)
+    """★ 얼굴 검출기는 새로 만들지 않는다. 윗폴더의 detector.py 가 «통로»를 고른다.
+       맥 = speaker_box.swift(애플 Vision) · 윈도우 = OpenCV(YuNet). 나가는 모양은 같다.
+       출력: [{image,width,height,faces:[{x,y,w,h,conf}],persons:[...],texts:[...]}]
+       ⚠️ 예전 --no-text 와 같은 뜻으로 want_text=False 를 준다 — 여기서는 얼굴만 쓴다."""
+    _mac = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    if _mac not in sys.path:
+        sys.path.insert(0, _mac)
+    import detector
     out = {}
     try:
-        for d in json.loads(r.stdout or '[]'):
+        for d in detector.detect(paths, want_text=False):
             out[d['image']] = [{'box':[int(f['x']), int(f['y']),
                                        int(f['x']+f['w']), int(f['y']+f['h'])],
                                 'conf': f['conf']} for f in d.get('faces', [])]

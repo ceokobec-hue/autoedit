@@ -9,9 +9,10 @@ compose_mac.py — 합성 3단계 (맥판). compose1~3.ps1 통합 이식.
 ★ 순서가 규약이다. 범퍼는 시간을 밀어내므로 자막을 나중에 구우면
   자막 수백 개의 타임코드를 전부 다시 계산해야 한다.
 
-맥에서 바뀐 것 두 가지
-  · h264_nvenc → h264_videotoolbox (맥 하드웨어 인코더)
-  · 조각(seg)을 이어 붙인 즉시 지운다 — 이 노트북은 여유 공간이 빠듯하다
+윈도우 원본(compose1~3.ps1)에서 바뀐 것 두 가지
+  · 인코더를 코드에 박지 않는다 — 이 컴퓨터에 맞는 것을 platform_tools.py 가 고른다
+    (맥 h264_videotoolbox · 윈도우 h264_nvenc 또는 libx264)
+  · 조각(seg)을 이어 붙인 즉시 지운다 — 중간 조각이 디스크를 크게 먹는다
 
 계획 파일(JSON) 예:
 {
@@ -40,6 +41,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import platform_tools               # 인코더는 OS 마다 다르다 (맥·윈도우·리눅스)
 FF_FULL = ff_path.BIN
 FFMPEG = os.path.join(FF_FULL, 'ffmpeg') if os.path.exists(os.path.join(FF_FULL, 'ffmpeg')) else 'ffmpeg'
 FFPROBE = os.path.join(FF_FULL, 'ffprobe') if os.path.exists(os.path.join(FF_FULL, 'ffprobe')) else 'ffprobe'
@@ -59,8 +61,10 @@ def dur(p):
 
 
 def venc(bitrate, gop=60):
-    """맥 하드웨어 인코더. concat -c copy 로 이어 붙이려면 모든 조각이 같은 설정이어야 한다."""
-    return ['-c:v', 'h264_videotoolbox', '-b:v', bitrate, '-pix_fmt', 'yuv420p',
+    """이 컴퓨터에 맞는 인코더. concat -c copy 로 이어 붙이려면 모든 조각이 같은 설정이어야 한다.
+
+    ★ platform_tools.venc 는 언제나 같은 답을 주므로 조각들의 설정이 어긋날 일이 없다."""
+    return platform_tools.venc(bitrate) + ['-pix_fmt', 'yuv420p',
             '-g', str(gop), '-r', '30', '-video_track_timescale', '30000']
 
 
@@ -206,7 +210,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--plan', required=True)
     ap.add_argument('--stages', default='1,2,3')
-    ap.add_argument('--bitrate', default='14M', help='videotoolbox 목표 비트레이트')
+    ap.add_argument('--bitrate', default='14M',
+                    help='목표 비트레이트 (libx264 로 굽을 때는 «상한선»이 됩니다)')
     a = ap.parse_args()
 
     P = json.load(open(a.plan, encoding='utf-8'))

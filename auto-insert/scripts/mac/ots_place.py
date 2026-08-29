@@ -13,7 +13,7 @@ while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path
 sys.path.insert(0, _R)
 import ff_path
 FF=ff_path.FFMPEG
-SWIFT=os.path.join(S,'speaker_box.swift')
+import detector          # 얼굴·사람·글자 찾는 «통로»를 고른다 (맥=애플 Vision · 윈도우=OpenCV)
 
 def grab(video, times, outdir):
     os.makedirs(outdir, exist_ok=True)
@@ -24,12 +24,11 @@ def grab(video, times, outdir):
     with ThreadPoolExecutor(max_workers=4) as ex: return list(ex.map(one,list(enumerate(times))))
 
 def vision(frames, chunk=30):
-    out=[]
-    for i in range(0,len(frames),chunk):
-        r=subprocess.run(['swift',SWIFT]+frames[i:i+chunk],capture_output=True,text=True)
-        if r.returncode: raise RuntimeError(r.stderr[:600])
-        out+=json.loads(r.stdout)
-    return out
+    """프레임 → 사람·얼굴·글자.
+
+    ★ 통로 고르기는 detector.py 한 곳에서 한다. 여기서 swift 를 직접 부르지 않는다.
+      맥은 지금까지와 똑같이 애플 Vision, 윈도우는 OpenCV — 나가는 JSON 모양은 같다."""
+    return detector.detect(frames, want_text=True, chunk=chunk)
 
 def label_of(c):
     """화면에 찍을 이름. ⛔'label' 만 찾으면 스키마에 없는 칸이라 KeyError 로 죽는다.

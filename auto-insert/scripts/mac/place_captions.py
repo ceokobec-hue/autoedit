@@ -20,11 +20,10 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from srt_tools import read_srt, tc
-
 HERE = os.path.dirname(os.path.abspath(__file__))
-SWIFT = os.path.join(HERE, 'speaker_box.swift')
+sys.path.insert(0, HERE)
+from srt_tools import read_srt, tc
+import detector          # 얼굴·사람·글자 찾는 «통로»를 고른다 (맥=애플 Vision · 윈도우=OpenCV)
 
 # ── ffmpeg 경로는 ff_path.py 한 곳에서만 정한다 (저장소 뿌리에 있다) ──
 _R = os.path.dirname(os.path.abspath(__file__))
@@ -63,16 +62,13 @@ def grab_frames(video, times, outdir, jobs=4):
 
 
 def run_vision(frames, chunk=40):
-    """swift 스크립트는 인자로 여러 장을 한 번에 받는다. 너무 길면 나눠 부른다."""
-    out = []
-    for i in range(0, len(frames), chunk):
-        part = frames[i:i + chunk]
-        r = subprocess.run(['swift', SWIFT] + part,
-                           capture_output=True, text=True)
-        if r.returncode != 0:
-            raise RuntimeError('speaker_box.swift 실패:\n' + r.stderr[:800])
-        out.extend(json.loads(r.stdout))
-    return out
+    """프레임 → 사람·얼굴·글자.
+
+    ★ 통로 고르기는 detector.py 한 곳에서 한다. 여기서 swift 를 직접 부르지 않는다.
+      맥에서는 지금까지와 똑같이 speaker_box.swift(애플 Vision)로 간다.
+      윈도우에는 Vision 이 없어 OpenCV 로 간다 — 나가는 JSON 모양은 같다.
+    """
+    return detector.detect(frames, want_text=True, chunk=chunk)
 
 
 def pick_person(fr):
@@ -158,7 +154,9 @@ def main():
 
     fdir = os.path.join(a.out, '_frames')
     frames = grab_frames(a.video, times, fdir)
-    print('프레임 %d장 추출 → Vision 분석' % len(frames))
+    # 어떤 통로로 재는지 화면에 밝힌다 (맥에서는 지금까지와 같은 «Vision» 이 찍힌다)
+    print('프레임 %d장 추출 → %s 분석'
+          % (len(frames), 'Vision' if detector.which() == 'swift' else 'OpenCV'))
     vis = run_vision(frames)
 
     # 금지선: 모든 표본에서 가장 높이 올라온 자막 윗변

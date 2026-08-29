@@ -43,14 +43,17 @@ SUB     = tuple(J.get('sub_band', [1190, 1345]))
 PIP     = tuple(J.get('pip', [1795, 0, 2560, 435]))
 BUGZONE = tuple(J.get('bug_zone', [0, 0, 600, 210]))
 OUT     = J.get('out', '완성본.mp4')   # 최종 렌더 파일명 — ⛔개인 경로를 코드에 박지 않는다
-# ── ffmpeg 경로는 ff_path.py 한 곳에서만 정한다 (저장소 뿌리에 있다) ──
+# ── ffmpeg·크롬 경로는 저장소 뿌리의 도우미 한 곳에서만 정한다 ──
 _R = os.path.dirname(os.path.abspath(__file__))
 while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path.py')):
     _R = os.path.dirname(_R)
 sys.path.insert(0, _R)
 import ff_path
+import platform_tools
 FF      = J.get('ffmpeg', ff_path.FFMPEG)
-CHROME  = J.get('chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+# ⛔ 크롬 위치를 코드에 박지 않는다 — OS 마다 자리가 다르다.
+#    job.json 의 "chrome" ▸ 환경변수 CHROME ▸ OS 별 표준 자리 순서로 찾는다.
+CHROME  = J.get('chrome') or platform_tools.find_chrome()
 FONT    = J.get('font', os.path.join(os.environ.get('AUTOEDIT_FONTS', os.path.expanduser('~/.autoedit/fonts')),'Pretendard-Bold.otf'))
 
 def chdir():

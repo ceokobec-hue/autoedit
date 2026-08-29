@@ -12,8 +12,15 @@
 """
 import json, os, re, subprocess, sys, argparse
 
-# ⛔ 크롬 위치를 코드에 박지 않는다
-CH = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+# ── 저장소 뿌리의 도우미(ff_path·platform_tools)를 쓰려고 뿌리를 찾아 올라간다 ──
+_R = os.path.dirname(os.path.abspath(__file__))
+while _R != os.path.dirname(_R) and not os.path.exists(os.path.join(_R, 'ff_path.py')):
+    _R = os.path.dirname(_R)
+sys.path.insert(0, _R)
+import platform_tools
+
+# ⛔ 크롬 위치를 코드에 박지 않는다 — OS 마다 자리가 다르다 (platform_tools.py 가 찾는다)
+CH = platform_tools.find_chrome()
 # 폰트 창고는 한 곳뿐 — get_fonts.sh 가 채운다
 FONTDIR = os.environ.get('AUTOEDIT_FONTS', os.path.expanduser('~/.autoedit/fonts'))
 S       = os.path.dirname(os.path.abspath(__file__))
@@ -36,13 +43,10 @@ def check_fonts():
     if miss:
         sys.exit('⛔ 카드 폰트(woff2)가 없습니다 — 이대로 구우면 «에러 없이 다른 글꼴»로 나갑니다.\n'
                  '   찾은 곳: %s\n   없는 파일: %s\n'
-                 '   → bash auto-insert/scripts/mac/get_fonts.sh' % (FONTDIR, ', '.join(miss)))
+                 '   → %s' % (FONTDIR, ', '.join(miss), platform_tools.fonts_cmd()))
 
 def check_chrome():
-    if not os.path.exists(CH):
-        sys.exit('⛔ 크롬을 못 찾았습니다: %s\n'
-                 '   인서트 PNG 는 크롬이 굽습니다(무료).\n'
-                 '   → brew install --cask google-chrome   /   export CHROME=<경로>' % CH)
+    platform_tools.require_chrome()
 
 # ── 카드 «형식» 판별 ─────────────────────────────────────
 # 이 저장소에는 이름이 같은 cards.json 이 두 가지 있다. 종류(kind)로 구분된다.

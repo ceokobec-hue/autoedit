@@ -131,7 +131,11 @@ def full_html(c):
          c['no'], c['kick'], c['h1'], items))
 
 def head_of(c):
-    """큰 글씨로 쓸 문구. ⛔c['head'] 만 찾으면 그 칸이 없는 카드에서 KeyError 로 죽는다."""
+    """큰 글씨로 쓸 문구. ⛔c['head'] 만 찾으면 그 칸이 없는 카드에서 KeyError 로 죽는다.
+
+    ⚠️ ots_place.label_of() 와 «순서가 다른 것은 일부러»다. 맞추지 말 것.
+       label_of  = 표에 찍을 «이름»    → label 이 제일 정확하다
+       head_of   = 화면에 띄울 «큰 글씨» → head 가 제일 정확하다(label 은 설명용이라 뒤로)"""
     for k in ('head', 'h1', 'keyword', 'label', 'kicker'):
         v = c.get(k)
         if v: return str(v)

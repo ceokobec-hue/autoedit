@@ -32,7 +32,10 @@ def vision(frames, chunk=30):
     return out
 
 def label_of(c):
-    """화면에 찍을 이름. ⛔'label' 만 찾으면 스키마에 없는 칸이라 KeyError 로 죽는다."""
+    """화면에 찍을 이름. ⛔'label' 만 찾으면 스키마에 없는 칸이라 KeyError 로 죽는다.
+
+    ⚠️ build_inserts.head_of() 와 «순서가 다른 것은 일부러»다. 맞추지 말 것.
+       여기는 표에 찍을 «이름»이라 label 이 먼저, 저기는 «큰 글씨»라 head 가 먼저다."""
     import re as _re
     for k in ('label','head','keyword','kicker','h1'):
         v = c.get(k)

@@ -37,6 +37,27 @@ SPOTS = {
 KIND_SPOT = {'sticker':'corner','bento':'corner','terminal':'corner',
              'rail':'rail','daepan':'daepan'}
 
+BC_KINDS = ('corner', 'full')          # 방송형 인서트 전용 종류 — 여기서는 못 쓴다
+
+def check_format(cards, path):
+    """⛔ 이름이 같은 cards.json 이 두 가지다. 잘못 온 것을 조용히 처리하지 않는다."""
+    bad = sorted({c.get('kind') for c in cards if c.get('kind') in BC_KINDS})
+    if bad:
+        ids = ', '.join(c.get('id', '?') for c in cards if c.get('kind') in BC_KINDS)
+        raise SystemExit(
+            '⛔ %s 은(는) «방송형 인서트» 형식입니다 — 이 스크립트는 «OTS 카드»용입니다.\n'
+            '   섞여 있는 카드: %s  (종류: %s)\n\n'
+            '   방송형 인서트는 이쪽으로 가세요:\n'
+            '     python3 auto-insert/scripts/mac/build_inserts.py --cards %s --place place.json\n\n'
+            '   OTS 카드의 종류는 sticker·bento·rail·daepan·terminal 입니다 (파일형식.md 참고).'
+            % (path, ids, ', '.join(bad), path))
+    unknown = [c for c in cards if c.get('kind') not in SIZE]
+    if unknown:
+        raise SystemExit('⛔ %s 에 모르는 종류(kind)가 있습니다: %s\n'
+                         '   쓸 수 있는 것: %s'
+                         % (path, ', '.join('%s=%r' % (c.get('id', '?'), c.get('kind'))
+                                            for c in unknown[:5]), ', '.join(sorted(SIZE))))
+
 def grab(video, times, outdir):
     """⛔파일명을 «표본 번호»로 지으면 카드마다 0~4가 겹쳐 첫 카드 프레임을 계속 재사용한다.
        에러도 안 나고 숫자도 그럴듯해서 못 알아챈다(실제로 당한 사고) → 이름에 «시각»을 넣는다."""
@@ -204,6 +225,8 @@ if __name__=='__main__':
     for p in (video, sys.argv[2]):
         if not os.path.exists(p): raise SystemExit('⛔ %s 이(가) 없습니다.'%p)
     cards = json.load(open(sys.argv[2], encoding='utf-8'))
+    if not cards: raise SystemExit('⛔ %s 에 카드가 한 장도 없습니다.' % sys.argv[2])
+    check_format(cards, sys.argv[2])          # ⛔ 형식이 다르면 «여기서» 멈춘다
     out = plan(video, cards)
     print('%-6s %-9s %-7s %-7s %6s %6s %6s  %s' %
           ('id','종류','자리','모드','흰대비','검대비','편차','판정 사유'))

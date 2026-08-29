@@ -44,6 +44,31 @@ def check_chrome():
                  '   인서트 PNG 는 크롬이 굽습니다(무료).\n'
                  '   → brew install --cask google-chrome   /   export CHROME=<경로>' % CH)
 
+# ── 카드 «형식» 판별 ─────────────────────────────────────
+# 이 저장소에는 이름이 같은 cards.json 이 두 가지 있다. 종류(kind)로 구분된다.
+OTS_KINDS = ('sticker', 'bento', 'rail', 'daepan', 'terminal')   # → ots_v2 파이프라인
+BC_KINDS  = ('corner', 'full')                                   # → 여기(방송형 인서트)
+
+def check_format(cards, path):
+    """⛔ 관대한 앞단 + 엄격한 뒷단 = 최악. 여기서 «먼저» 잡아 어디로 가야 하는지 알려준다."""
+    ots = sorted({c.get('kind') for c in cards if c.get('kind') in OTS_KINDS})
+    if ots:
+        ids = ', '.join(c['id'] for c in cards if c.get('kind') in OTS_KINDS)
+        sys.exit('⛔ %s 은(는) «OTS 카드» 형식입니다 — 이 스크립트는 «방송형 인서트»용입니다.\n'
+                 '   섞여 있는 카드: %s  (종류: %s)\n\n'
+                 '   OTS 카드는 이쪽으로 가세요:\n'
+                 '     python3 ots_v2/plan_cards.py <영상.mp4> %s\n'
+                 '     python3 ots_v2/approve.py --cards %s --plan plan_out.json\n'
+                 '     python3 ots_v2/cards_v2.py check_cards.json fin\n\n'
+                 '   두 형식의 차이는 파일형식.md 를 보세요 '
+                 '(방송형 kind = corner·full / OTS kind = %s).'
+                 % (path, ids, ', '.join(ots), path, path, '·'.join(OTS_KINDS)))
+    bad = [c for c in cards if c.get('kind') not in BC_KINDS]
+    if bad:
+        sys.exit('⛔ %s 에 모르는 종류(kind)가 있습니다: %s\n'
+                 '   방송형 인서트는 «corner»(모서리 카드) 또는 «full»(풀프레임)만 씁니다.'
+                 % (path, ', '.join('%s=%r' % (c.get('id', '?'), c.get('kind')) for c in bad[:5])))
+
 def rows_html(rows):
     return '\n'.join('<div class="row">%s<span class="t">%s</span>%s</div>' % (
         '<span class="n">%s</span>'%r['n'] if r.get('n') else '', r['t'],
@@ -105,6 +130,13 @@ def full_html(c):
          92, 58 if len(c['items'])>=4 else 64,
          c['no'], c['kick'], c['h1'], items))
 
+def head_of(c):
+    """큰 글씨로 쓸 문구. ⛔c['head'] 만 찾으면 그 칸이 없는 카드에서 KeyError 로 죽는다."""
+    for k in ('head', 'h1', 'keyword', 'label', 'kicker'):
+        v = c.get(k)
+        if v: return str(v)
+    return c.get('id', '·')
+
 def promote(c):
     """코너 원고를 풀프레임 원고로 승격"""
     items=[]
@@ -117,7 +149,8 @@ def promote(c):
     if c.get('desc'):
         items.append(('', re.sub('<br>',' ', re.sub('</?b>','',c['desc'])), ''))
     if not items: items=[('', c.get('foot','') or '—', '')]
-    return {'no':c.get('no','·'), 'kick':c['kicker'], 'h1':c['head'].replace('<b>','<u>').replace('</b>','</u>'),
+    return {'no':c.get('no','·'), 'kick':c.get('kicker',''),
+            'h1':head_of(c).replace('<b>','<u>').replace('</b>','</u>'),
             'items':items[:4]}
 
 def shot(html_path, png, w, h, transparent):
@@ -176,6 +209,8 @@ if __name__=='__main__':
     os.makedirs(B, exist_ok=True); os.makedirs(OUT, exist_ok=True)
 
     ALL=json.load(open(A.cards,encoding='utf-8'))
+    if not ALL: sys.exit('⛔ %s 에 카드가 한 장도 없습니다.'%A.cards)
+    check_format(ALL, A.cards)          # ⛔ 형식이 다르면 «여기서» 멈춘다
     if A.measure:
         if not os.path.exists(A.measure):
             sys.exit('⛔ %s 이(가) 없습니다 — python3 ots_place.py <영상.mp4> %s 를 먼저 돌리세요.'

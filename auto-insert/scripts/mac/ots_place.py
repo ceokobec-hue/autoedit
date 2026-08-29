@@ -51,6 +51,18 @@ if __name__=='__main__':
     for p in (V, sys.argv[2]):
         if not os.path.exists(p): raise SystemExit('⛔ %s 이(가) 없습니다.'%p)
     CARDS=json.load(open(sys.argv[2],encoding='utf-8'))
+    if not CARDS: raise SystemExit('⛔ %s 에 카드가 한 장도 없습니다.'%sys.argv[2])
+    # ⛔ 여기서 통과시키면 사용자는 다음 단계(build_inserts)에서 스택트레이스를 맞는다.
+    #    「관대한 앞단 + 엄격한 뒷단」이 제일 나쁘다 → 첫 단계에서 알려준다.
+    _ots=[c for c in CARDS if c.get('kind') in ('sticker','bento','rail','daepan','terminal')]
+    if _ots:
+        raise SystemExit(
+            '⛔ %s 은(는) «OTS 카드» 형식입니다 — 이 스크립트는 «방송형 인서트»용입니다.\n'
+            '   섞여 있는 카드: %s\n\n'
+            '   OTS 카드는 이쪽으로 가세요:\n'
+            '     python3 auto-insert/scripts/mac/ots_v2/plan_cards.py <영상.mp4> %s\n\n'
+            '   두 형식의 차이는 파일형식.md 를 보세요.'
+            % (sys.argv[2], ', '.join(c.get('id','?') for c in _ots), sys.argv[2]))
     SAMPLES=5
     times, index = [], []
     for c in CARDS:

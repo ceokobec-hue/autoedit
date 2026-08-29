@@ -351,6 +351,19 @@ if __name__=='__main__':
                  '   → approve.py 가 만드는 check_cards.json 을 주거나, 직접 쓴 카드 JSON 을 주세요.' % src)
     check_fonts(); check_chrome()
     cards = json.load(open(src, encoding='utf-8'))
+    if not cards: sys.exit('⛔ %s 에 카드가 한 장도 없습니다.' % src)
+    # ⛔ 이름이 같은 cards.json 이 두 가지다 — 잘못 온 것을 조용히 처리하지 않는다
+    _bc = [c for c in cards if c.get('kind') in ('corner', 'full')]
+    if _bc:
+        sys.exit('⛔ %s 은(는) «방송형 인서트» 형식입니다 — 이 스크립트는 «OTS 카드»용입니다.\n'
+                 '   섞여 있는 카드: %s\n'
+                 '   → python3 auto-insert/scripts/mac/build_inserts.py --cards %s --place place.json'
+                 % (src, ', '.join(c.get('id','?') for c in _bc), src))
+    _un = [c for c in cards if c.get('kind') not in SIZE]
+    if _un:
+        sys.exit('⛔ %s 에 모르는 종류(kind)가 있습니다: %s\n   쓸 수 있는 것: %s'
+                 % (src, ', '.join('%s=%r'%(c.get('id','?'), c.get('kind')) for c in _un[:5]),
+                    ', '.join(sorted(SIZE))))
     out   = sys.argv[2] if len(sys.argv)>2 else 'out'
     for c in cards:
         r = render(c, out)

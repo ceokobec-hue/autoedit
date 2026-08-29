@@ -1,0 +1,9 @@
+[
+ {"id":"S1","kind":"sticker","at":2.0,"dur":3.0,
+  "kicker":"작은 라벨","head":"스티커<br>카드","tag":"뱃지",
+  "rows":[{"t":"항목 이름","v":"값","unit":"개"}],
+  "foot":"아래 한 줄","src":"출처"},
+
+ {"id":"D1","kind":"daepan","at":13.0,"dur":3.0,
+  "kicker":"작은 라벨","keyword":"큰 키워드","hi":"키워드"}
+]

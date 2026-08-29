@@ -1,0 +1,86 @@
+# ===== 🔐 비밀키·인증 — 절대 커밋 금지 =====
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa*
+id_ed25519*
+client_secret*.json
+token.json
+credentials.json
+*credential*.json
+serviceAccount*.json
+service-account*.json
+*-firebase-adminsdk-*.json
+.api_keys/
+.netrc
+.npmrc
+
+# ===== 🎬 영상·음성 =====
+# 용량도 크지만, 강의 영상에는 사람 얼굴과 목소리가 들어 있다.
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.flac
+*.srt
+*.ass
+
+# ===== 🔤 폰트 =====
+# 대부분 「파일 재배포 금지」다(영상에 구워 쓰는 건 허용).
+# get_fonts.sh 로 각자 받는다.
+*.ttf
+*.otf
+*.woff2
+
+# ===== 🙍 작업 산출물 =====
+work/
+output/
+out/
+build/
+sheet/
+fin/
+shots/
+png/
+_stage/
+_plan_frames/
+_ots_frames/
+산출물/
+작업물/
+logs/
+job.json
+grid.png
+grid.html
+*.csv
+*.xlsx
+
+# ⛔ get_fonts.sh 가 만드는 «폰트 창고 바로가기». 폰트 자체와 마찬가지로 커밋하지 않는다.
+auto-insert/assets/fonts
+
+# ===== 📦 예제 데이터 =====
+# examples/ 의 «설정 파일(JSON)»은 저장소에 있어야 한다 — 이게 있어야 첫 결과물이 나온다.
+# 위쪽 규칙이 *.mp4·*.srt 를 이미 막고 있으므로, 예제가 «만들어 내는» 것만 자동으로 빠진다.
+!examples/*.json
+# 예제를 «돌리면» 생기는 작업 폴더(out/ · ots/ · mc/ …)는 통째로 뺀다.
+# examples/ 바로 밑의 JSON·README·sh 만 저장소에 있으면 된다.
+examples/*/
+
+# ===== 🧹 잔여물 =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# 레드블루 감사 기록 — 공개 금지
+_redblue/

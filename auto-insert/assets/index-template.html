@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Inserts</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background-color: #E8E2D6; }
+      #graphics-layer { position: absolute; inset: 0; z-index: 1; }
+    </style>
+  </head>
+  <body>
+    <!-- ⛔ 길이(초)가 «세 곳» 에 있고 셋이 다르면 조용히 어긋난다.
+         값은 insert-engine.html 의 D 배열 합 + 여백(0.5×2) 이다.
+         insert-engine.html 을 열면 콘솔에 맞는 값을 찍어 준다. 아래 TOTAL 한 줄만 고치면 셋 다 따라간다. -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="31" data-width="1920" data-height="1080">
+      <div id="graphics-layer" data-composition-id="main-graphics" data-composition-src="compositions/main-graphics.html"
+           data-start="0" data-duration="31" data-track-index="1" data-width="1920" data-height="1080"></div>
+    </div>
+    <script>
+      var TOTAL = 31;   /* ← 여기만 고친다 (insert-engine.html 의 D 합계 + 1) */
+      document.getElementById('root').setAttribute('data-duration', String(TOTAL));
+      document.getElementById('graphics-layer').setAttribute('data-duration', String(TOTAL));
+      window.__timelines = window.__timelines || {};
+      var mainTl = gsap.timeline({ paused: true });
+      var proxy = { t: 0 };
+      mainTl.to(proxy, { t: TOTAL, duration: TOTAL, ease: "none" }, 0);
+      window.__timelines["main"] = mainTl;
+    </script>
+  </body>
+</html>

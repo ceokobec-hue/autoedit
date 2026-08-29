@@ -1,0 +1,10 @@
+{
+ "video":   "examples/sample.mp4",
+ "srt":     "examples/sample.srt",
+ "workdir": "examples/out",
+ "out":     "완성본.mp4",
+ "width": 2560, "height": 1440,
+ "sub_band": [1190, 1345],
+ "pip":      [1795, 0, 2560, 435],
+ "bug_zone": [0, 0, 600, 210]
+}

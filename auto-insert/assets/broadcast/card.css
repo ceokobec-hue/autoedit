@@ -1,0 +1,33 @@
+/* 폰트는 ../fonts/ (= auto-insert/assets/fonts) 에서 찾는다.
+   그 자리는 get_fonts.sh 가 $AUTOEDIT_FONTS 로 이어 준다(바로가기).
+   build_inserts.py 는 이 파일을 통째로 넣으면서 폰트 경로를 절대경로로 바꾼다. */
+@font-face{font-family:'Pretendard';src:url('../fonts/Pretendard-Regular.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'Pretendard';src:url('../fonts/Pretendard-Medium.woff2') format('woff2');font-weight:500}
+@font-face{font-family:'Pretendard';src:url('../fonts/Pretendard-Bold.woff2') format('woff2');font-weight:700}
+@font-face{font-family:'Pretendard';src:url('../fonts/Pretendard-Black.woff2') format('woff2');font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent}
+:root{--paper:#F4F1EA;--deep:#EDE8DD;--ink:#16130E;--sub:#6E675C;--red:#E8442E;--hair:#C8C1B2}
+.card{position:relative;background:var(--paper);color:var(--ink);font-family:'Pretendard',sans-serif;
+ word-break:keep-all;overflow:hidden;border-left:14px solid var(--red);
+ box-shadow:0 30px 70px rgba(0,0,0,.45),0 6px 0 rgba(0,0,0,.18)}
+.pad{padding:34px 38px 28px 34px;height:100%;display:flex;flex-direction:column}
+.kicker{font-size:25px;font-weight:700;letter-spacing:.20em;color:var(--red);margin-bottom:14px;line-height:1}
+.head{font-size:52px;font-weight:900;letter-spacing:-.032em;line-height:1.14}
+.rule{height:6px;background:var(--red);width:96px;margin:20px 0 18px}
+.rows{display:flex;flex-direction:column;gap:13px;flex:1}
+.row{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--hair);padding-bottom:11px}
+.row:last-child{border-bottom:0}
+.row .n{font-size:26px;font-weight:900;color:var(--red);min-width:32px;font-feature-settings:'tnum'}
+.row .t{font-size:32px;font-weight:700;line-height:1.28;flex:1}
+.row .v{font-size:44px;font-weight:900;letter-spacing:-.02em;font-feature-settings:'tnum';white-space:nowrap}
+.row .v em{font-style:normal;font-size:26px;font-weight:700;color:var(--sub);
+ display:inline-block;letter-spacing:normal;margin-left:.42em}  /* ⛔margin 5px 은 44px 글자 옆에서 0이나 마찬가지 → 제 크기 기준(.42em)으로 띄운다 */
+.big{font-size:96px;font-weight:900;letter-spacing:-.04em;line-height:1;font-feature-settings:'tnum'}
+.big em{font-style:normal;font-size:38px;color:var(--sub);font-weight:700;
+ display:inline-block;letter-spacing:normal;margin-left:.34em}
+.desc{font-size:27px;font-weight:500;color:var(--sub);line-height:1.45;margin-top:10px}
+.foot{margin-top:auto;padding-top:14px;border-top:2px solid var(--ink);font-size:20px;font-weight:500;
+ letter-spacing:.06em;color:var(--sub);display:flex;justify-content:space-between;align-items:center}
+.grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.05;
+ background-size:420px 420px;background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='420'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='420' height='420' filter='url(%23n)'/></svg>")}

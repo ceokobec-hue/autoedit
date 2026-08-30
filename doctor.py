@@ -174,7 +174,22 @@ def main():
     # 8. whisper-cli — 자막(SRT)·낱말 시각을 만드는 도구
     # ⛔ ffmpeg-full 에 «딸려 오지 않는다». 따로 받아야 한다.
     if shutil.which('whisper-cli'):
-        say(OK, 'whisper-cli — 자막 만들기 사용 가능')
+        # ⛔ 실행파일만 보고 ✅ 를 주면 안 된다 — whisper 는 «모델 파일»이 따로 있어야 돈다.
+        #    실행파일만 있는 상태에서 돌리면  error: failed to initialize whisper context  로 죽는다.
+        #    doctor 가 ✅ 인데 정작 못 쓰는 것이 이 저장소가 제일 경계하는 사고다.
+        model = os.environ.get('WHISPER_MODEL') or ''
+        cands = [model] if model else []
+        cands += [os.path.expanduser('~/.autoedit/' + n)          # 설치.md 가 안내하는 자리
+                  for n in ('ggml-small.bin', 'ggml-medium.bin', 'ggml-base.bin')]
+        found = next((p for p in cands if p and os.path.exists(p)), None)
+        if found:
+            say(OK, 'whisper-cli — 자막 만들기 사용 가능', found)
+        else:
+            say(WARN, 'whisper-cli 는 있는데 «모델 파일»이 없습니다 (선택)',
+                '실행파일만으로는 돌지 않습니다. 받아쓰기를 쓰실 때만 필요합니다.\n'
+                '     찾아본 곳: ' + ', '.join(cands) + '\n'
+                '     → 설치.md 「부록 · 자막 파일 만들기」 를 보세요 (모델 1개 내려받기).\n'
+                '     다른 곳에 두셨다면:  WHISPER_MODEL 환경변수로 알려 주세요.')
     else:
         say(WARN, 'whisper-cli 가 없습니다 (선택)',
             '자막(SRT)을 «자동으로 만드는» 단계와 오토멀티캠 문장 분해만 못 씁니다.\n'
